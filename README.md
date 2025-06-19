@@ -38,7 +38,7 @@ obj<-FindClusters(obj,graph.name="MEcell")
 # Tutorial
 
 - [Analyze MERFISH data to identify region-specific subtypes](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/MERFISH.html)
-- [Analyze Xenium mouse pup data](https://htmlpreview.github.io/?https://github.com/liuqivandy/aKNNO/blob/master/Tutorial/mousebrain_SagittalPosterior.html)
+- [Analyze Xenium mouse pup data](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/Xenium.html)
 
 
 
