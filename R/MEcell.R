@@ -52,13 +52,15 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
   if (!has_data) {
     message("'data' not found. Running NormalizeData()...")
     obj <- NormalizeData(obj, assay = assay, verbose = FALSE)
-    obj<-ScaleData(obj,features=rownames(obj))
+    obj<-FindVariableFeatures(obj)
+    obj<-ScaleData(obj)
   }
 
 
   if (!"pca" %in% names(obj@reductions)){
 
     message("PCA not found — running PCA now...")
+    if (is.null(VariableFeatures(obj))) {VariableFeatures(obj)<-rownames(obj)}
     obj <- RunPCA(obj, verbose = FALSE)
   }
 
