@@ -37,11 +37,9 @@ obj<-FindClusters(obj,graph.name="MEcell")
 
 # Tutorial
 
-- [Analyze Mouse Instestinal Epithelium scRNAseq data](https://htmlpreview.github.io/?https://github.com/liuqivandy/aKNNO/blob/master/Tutorial/mouseInstestine.html)
-- [Analyze 10x Visium data from mouse brain sagittal posterior](https://htmlpreview.github.io/?https://github.com/liuqivandy/aKNNO/blob/master/Tutorial/mousebrain_SagittalPosterior.html)
-- [Analyze Human Pancreas scRNAseq data](https://htmlpreview.github.io/?https://github.com/liuqivandy/aKNNO/blob/master/Tutorial/humanPancreas.html)
-- [Analyze Mouse Intestinal Organoid scRNAseq data](https://htmlpreview.github.io/?https://github.com/liuqivandy/aKNNO/blob/master/Tutorial/mouseInstestineOrganoids.html)
-- [Analyze Mouse Habenula scRNAseq data](https://htmlpreview.github.io/?https://github.com/liuqivandy/aKNNO/blob/master/Tutorial/mouseHabenula.html)
+- [Analyze MERFISH data to identify region-specific subtypes](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/MERFISH.html)
+- [Analyze Xenium mouse pup data](https://htmlpreview.github.io/?https://github.com/liuqivandy/aKNNO/blob/master/Tutorial/mousebrain_SagittalPosterior.html)
+
 
 
 <a name="Citation"/>
