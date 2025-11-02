@@ -155,3 +155,58 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
 }
 
 
+
+
+#' CalMEI
+#'
+#' @description
+#' Calculate the Microenvironment Index (MEI) for each cell, which quantifies
+#' the influence of the microenvironment on a cell's identity by comparing
+#' expression-only neighbors (before MEcell refinement) to the MEcell-defined clusters.
+#'
+#' @param obj A Seurat object containing the expression-based neighbor graph and MEcell cluster labels.
+#' @param graph.name Character string specifying the name of the expression-only graph (before microenvironment refinement).
+#' @param topn Integer. The number of top nearest neighbors to consider. Default is 20.
+#' @param cellcluster A vector specifying the cell clusters defined by MEcell.
+#'
+#' @return A numeric vector of MEI values, one per cell.
+#'
+#' @examples
+#' # Assuming `seurat_obj` contains the expression graph and MEcell clusters
+#' mei_values <- CalMEI(seurat_obj, graph.name = "RNA_snn", topn = 20, cellcluster = seurat_obj$MEcell_clusters)
+#'
+#' @export
+
+
+
+
+CalMEI <- function(obj, graph.name = "Xenium_snn", cellcluster = obj$MEcell_clusters, topn = 20) {
+  graph <- obj@graphs[[graph.name]]
+  
+  if (!inherits(graph, "dgCMatrix")) {
+    stop("The graph must be a sparse matrix (dgCMatrix).")
+  }
+  
+  ncell <- nrow(graph)
+  supportnum <- numeric(ncell)
+  
+  for (i in seq_len(ncell)) {
+    # get indices of nonzero neighbors for cell i
+    start <- graph@p[i] + 1L
+    end <- graph@p[i + 1L]
+    if (start > end) next  # skip if no edges
+    
+    neighbors <- graph@i[start:end] + 1L
+    weights <- graph@x[start:end]
+    
+    # rank neighbors by edge weight
+    top_k <- min(topn, length(weights))
+    top_idx <- order(weights, decreasing = TRUE)[seq_len(top_k)]
+    
+    top_cluster <- cellcluster[neighbors[top_idx]]
+    supportnum[i] <- sum(top_cluster == top_cluster[1])
+  }
+  
+  MEI <- (topn - supportnum) / topn
+  return(MEI)
+}
