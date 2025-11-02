@@ -36,9 +36,11 @@ obj<-FindClusters(obj,graph.name="MEcell")
 <a name="Tutorial"/>
 
 # Tutorial
-
-- [Analyze MERFISH data to identify region-specific subtypes](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/MERFISH.html)
+- [Analyze CosMx mouse brain data](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/CosMx.html)
 - [Analyze Xenium mouse pup data](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/Xenium.html)
+- [Analyze Vizgen mouse brain data](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/Vizgen.html)
+- [Analyze VisiumHD mouse brain data](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/VisiumHD.html)
+- [Analyze MERFISH data to identify region-specific subtypes](https://htmlpreview.github.io/?https://github.com/liuqivandy/MEcell/blob/main/Tutorial/MERFISH.html)
 
 
 
