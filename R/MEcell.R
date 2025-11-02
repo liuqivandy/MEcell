@@ -180,18 +180,9 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
 
 
 
+
 CalMEI <- function(obj, graph.name = "Xenium_snn", cellcluster = obj$MEcell_clusters, topn = 20) {
   graph <- obj@graphs[[graph.name]]
-<<<<<<< Updated upstream
-  
-  if (!inherits(graph, "dgCMatrix")) {
-    stop("The graph must be a sparse matrix (dgCMatrix).")
-  }
-  
-  ncell <- nrow(graph)
-  supportnum <- numeric(ncell)
-  
-=======
 
   if (!inherits(graph, "dgCMatrix")) {
     stop("The graph must be a sparse matrix (dgCMatrix).")
@@ -200,26 +191,11 @@ CalMEI <- function(obj, graph.name = "Xenium_snn", cellcluster = obj$MEcell_clus
   ncell <- nrow(graph)
   supportnum <- numeric(ncell)
 
->>>>>>> Stashed changes
   for (i in seq_len(ncell)) {
     # get indices of nonzero neighbors for cell i
     start <- graph@p[i] + 1L
     end <- graph@p[i + 1L]
     if (start > end) next  # skip if no edges
-<<<<<<< Updated upstream
-    
-    neighbors <- graph@i[start:end] + 1L
-    weights <- graph@x[start:end]
-    
-    # rank neighbors by edge weight
-    top_k <- min(topn, length(weights))
-    top_idx <- order(weights, decreasing = TRUE)[seq_len(top_k)]
-    
-    top_cluster <- cellcluster[neighbors[top_idx]]
-    supportnum[i] <- sum(top_cluster == top_cluster[1])
-  }
-  
-=======
 
     neighbors <- graph@i[start:end] + 1L
     weights <- graph@x[start:end]
@@ -232,7 +208,6 @@ CalMEI <- function(obj, graph.name = "Xenium_snn", cellcluster = obj$MEcell_clus
     supportnum[i] <- sum(top_cluster == top_cluster[1])
   }
 
->>>>>>> Stashed changes
   MEI <- (topn - supportnum) / topn
   return(MEI)
 }
