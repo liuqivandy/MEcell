@@ -48,4 +48,4 @@ obj<-FindClusters(obj,graph.name="MEcell")
 
 # Citation
 [Liu Q, et al. Microenvironment-aware spatial modeling for accurate inference of cell identity. Nucleic Acids Res.
-2026 Jan 5;54(1):gkaf1477.](https://pubmed.ncbi.nlm.nih.gov/41495904/#)
+2026](https://pubmed.ncbi.nlm.nih.gov/41495904/#)
