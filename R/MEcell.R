@@ -69,24 +69,8 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
   }
 
   cord<-GetTissueCoordinates(obj)
-  if(method == "knn_rcpp") {
-    if (nthreads == 0L) {
-      ncores <- parallel::detectCores(logical = TRUE)
-      ts_message("Running knn_rcpp (kd-tree + OpenMP) on PCA embedding with all ", ncores, " cores ...")
-    } else {
-      ncores <- nthreads
-      ts_message("Running knn_rcpp (kd-tree + OpenMP) on PCA embedding with ", ncores, " cores ...")
-    }
-    nn.idx<-knn_rcpp(cord[,1:2], k=k_spatial, nthreads=ncores)$nn.idx
-  } else if(method == "nabor::knn") {
-    require(nabor)
-    nn.idx<-nabor::knn(cord[,1:2], k=k_spatial)$nn.idx
-  } else if (method == "RANN::nn2") {
-    require(RANN)
-    nn.idx <- RANN::nn2(cord[,1:2], k = k_spatial)$nn.idx
-  } else {
-    stop("Invalid method specified. Use 'knn_rcpp', 'nabor::knn', or 'RANN::nn2'.")
-  }
+  require(nabor)
+  nn.idx<-nabor::knn(cord[,1:2], k=k_spatial)$nn.idx
 
   if (usepca) {
     exp<-t(Embeddings(obj, reduction = "pca"))
