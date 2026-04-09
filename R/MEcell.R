@@ -1,3 +1,5 @@
+ts_message <- function(...) message(format(Sys.time(), "[%Y-%m-%d %H:%M:%S] "), ...)
+
 #'MEcell
 
 #' @description Leverage the microenvironment profile to improve spatial cell clustering
@@ -10,22 +12,24 @@
 #' @param K_adp whether to use adaptive strategy. Default is FALSE.
 #' @param delta The parameter controlling the sensitivity to local microenvironment change. Default is 0.5,only valid when k_adp=T
 #' @param prune.SNN The cutoff for acceptable Jaccard index when computing the neighborhood overlap for the SNN construction. Any edges with values less than or equal to this will be set to 0 and removed from the SNN graph. Default is 1/15
+#' @param method The method to compute nearest neighbors. Options are "knn_rcpp" (default, a custom kd-tree implementation with OpenMP parallelization), "nabor::knn" (using the nabor package), or "RANN::nn2" (using the RANN package).
+#' @param nthreads The number of threads to use for the "knn_rcpp" method. Default is 0, which means it will automatically detect and use all available cores.
 #'
 #' @return A Seurat object with a microenvironment-refined SNN graph (named as "MEcell") stored in the respective slot.
 #'
 #' library(MEcell)
 #' obj<-readRDS(url("https://www.dropbox.com/s/f5khi1zperqkybg/Mouse_Brain_Serial_Section1_SagittalPosterior_rawimage_object.rds?dl=1"))
 #' obj <- FindClusters(obj,graph.name="MEcell")
-
 #' @export
 
-
-
-MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,prune.SNN=1/15){
+MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,prune.SNN=1/15,method="knn_rcpp",nthreads=0L) {
+  if (!method %in% c("knn_rcpp", "nabor::knn", "RANN::nn2")) {
+    stop("Invalid method specified. Use 'knn_rcpp', 'nabor::knn', or 'RANN::nn2'.")
+  }
 
   if (is.null(assay)) {
     assay <- DefaultAssay(obj)
-    message("Using assay: ", assay)
+    ts_message("Using assay: ", assay)
   }
 
   # Check if assay exists
@@ -50,28 +54,49 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
 
   # Create 'data' if missing
   if (!has_data) {
-    message("'data' not found. Running NormalizeData()...")
+    ts_message("'data' not found. Running NormalizeData()...")
     obj <- NormalizeData(obj, assay = assay, verbose = FALSE)
     obj<-FindVariableFeatures(obj)
     obj<-ScaleData(obj)
   }
 
-
   if (!"pca" %in% names(obj@reductions)){
-
-    message("PCA not found — running PCA now...")
-    if (is.null(VariableFeatures(obj))) {VariableFeatures(obj)<-rownames(obj)}
+    ts_message("PCA not found — running PCA now...")
+    if (is.null(VariableFeatures(obj))) {
+      VariableFeatures(obj)<-rownames(obj)
+    }
     obj <- RunPCA(obj, verbose = FALSE)
   }
 
   cord<-GetTissueCoordinates(obj)
-  nn.idx<-RANN::nn2(cord[,1:2],k=k_spatial)$nn.idx
-  if (usepca){exp<-t(Embeddings(obj, reduction = "pca"))}else{
+  if(method == "knn_rcpp") {
+    if (nthreads == 0L) {
+      ncores <- parallel::detectCores(logical = TRUE)
+      ts_message("Running knn_rcpp (kd-tree + OpenMP) on PCA embedding with all ", ncores, " cores ...")
+    } else {
+      ncores <- nthreads
+      ts_message("Running knn_rcpp (kd-tree + OpenMP) on PCA embedding with ", ncores, " cores ...")
+    }
+    nn.idx<-knn_rcpp(cord[,1:2], k=k_spatial, nthreads=ncores)$nn.idx
+  } else if(method == "nabor::knn") {
+    require(nabor)
+    nn.idx<-nabor::knn(cord[,1:2], k=k_spatial)$nn.idx
+  } else if (method == "RANN::nn2") {
+    require(RANN)
+    nn.idx <- RANN::nn2(cord[,1:2], k = k_spatial)$nn.idx
+  } else {
+    stop("Invalid method specified. Use 'knn_rcpp', 'nabor::knn', or 'RANN::nn2'.")
+  }
+
+  if (usepca) {
+    exp<-t(Embeddings(obj, reduction = "pca"))
+  } else {
     if (is_v5) {
       exp <- GetAssayData(obj, assay = assay, layer = "data")
     } else {
       exp <- GetAssayData(obj, assay = assay, slot = "data")
-    }}
+    }
+  }
 
   # Number of cells
   num_cells <- ncol(exp)
@@ -87,31 +112,37 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
 
   # Multiply the expression matrix (exp) with the nn_matrix to get the sum of neighbor expression values
   nn.exp<- exp %*% (nn_matrix)
-  message("Complete step 1: Generate the microenvironment profile")
-
-  # Use RANN's nn2 directly and avoid repeated transpositions
+  ts_message("Complete step 1: Generate the microenvironment profile")
 
   pcaembed <- Embeddings(obj, reduction = "pca")
+  if(method == "knn_rcpp") {
+    if (nthreads == 0L) {
+      ncores <- parallel::detectCores(logical = TRUE)
+      ts_message("Running knn_rcpp (kd-tree + OpenMP) on PCA embedding with all ", ncores, " cores ...")
+    } else {
+      ncores <- nthreads
+      ts_message("Running knn_rcpp (kd-tree + OpenMP) on PCA embedding with ", ncores, " cores ...")
+    }
+    nnmtx <- knn_rcpp(pcaembed, k = 2L * k_nn, nthreads=ncores)
+  } else if(method == "nabor::knn") {
+    ts_message("Running nabor::knn on PCA embedding ...")
+    nnmtx <- nabor::knn(pcaembed, k = 2 * k_nn)
+  } else if (method == "RANN::nn2") {
+    ts_message("Running RANN::nn2 on PCA embedding ...")
+    nnmtx <- RANN::nn2(pcaembed, k = 2 * k_nn)
+  } else {
+    stop("Invalid method specified. Use 'knn_rcpp', 'nabor::knn', or 'RANN::nn2'.")
+  }
 
-
-  nnmtx <- RANN::nn2(pcaembed, k = 2 * k_nn)
-
-
-
-
-
-
-
+  ts_message("Running find_knn_rcpp on nn.exp and nnmtx$nn.idx ...")
   res<-find_knn_rcpp(as.matrix(nn.exp),nnmtx$nn.idx)
   index_reorder <- res$indices[, 1:k_nn]
-  message("Complete step 2: Refine the expression-NN based on the microenvironment profile")
 
+  ts_message("Complete step 2: Refine the expression-NN based on the microenvironment profile")
 
   rownum<-nrow(index_reorder)
   ##adaptive
   if (K_adp==T) {
-
-
     ###optimized version####
 
     nndist_reorder<-res$distances[,1:(k_nn+1)]
@@ -121,13 +152,11 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
     ind     <- sweep(nndist_reorder, 1, thresh, FUN = "<")
     ind<-ind[,-ncol(ind)]
 
-    rowind<-rep(index_reorder[,1],apply(ind,1,sum))
+    rowind<-rep(index_reorder[,1],rowSums(ind))
     colind<-t(index_reorder)[t(ind)]
   }else{
-
     rowind<-rep(index_reorder[,1],each=k_nn)
     colind<-t(index_reorder)
-
   }
 
   tmpsparse<- Matrix::sparseMatrix(
@@ -139,23 +168,19 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
 
   snnmatrix<-tmpsparse %*% Matrix::t(tmpsparse)
   snnmatrix@x<-snnmatrix@x/(k_nn*2-snnmatrix@x)
-  snnmatrix<-as(snnmatrix,"TsparseMatrix")
 
-
-  keep<-snnmatrix@x>prune.SNN
-  snnmatrix@i<-snnmatrix@i[keep]
-  snnmatrix@j<-snnmatrix@j[keep]
-  snnmatrix@x<-snnmatrix@x[keep]
+  # Prune small SNN values directly in CSC format (avoids TsparseMatrix copy)
+  snnmatrix@x[snnmatrix@x <= prune.SNN] <- 0
+  snnmatrix <- Matrix::drop0(snnmatrix)
   snn.graph<-as.Graph(snnmatrix)
 
   DefaultAssay(snn.graph) <- assay
   obj@graphs$MEcell<-snn.graph
+
+  ts_message("Complete step 3: Adding snn.graph as obj@graphs$MEcell")
+
   return(obj)
-
 }
-
-
-
 
 #' CalMEI
 #'
@@ -177,37 +202,20 @@ MEcell<-function(obj,assay=NULL,k_spatial=16,k_nn=20,usepca=F,K_adp=F,delta=0.5,
 #'
 #' @export
 
-
-
-
-
 CalMEI <- function(obj, graph.name = "Xenium_snn", cellcluster = obj$MEcell_clusters, topn = 20) {
   graph <- obj@graphs[[graph.name]]
 
   if (!inherits(graph, "dgCMatrix")) {
-    stop("The graph must be a sparse matrix (dgCMatrix).")
+    graph <- as(graph, "dgCMatrix")
   }
 
-  ncell <- nrow(graph)
-  supportnum <- numeric(ncell)
-
-  for (i in seq_len(ncell)) {
-    # get indices of nonzero neighbors for cell i
-    start <- graph@p[i] + 1L
-    end <- graph@p[i + 1L]
-    if (start > end) next  # skip if no edges
-
-    neighbors <- graph@i[start:end] + 1L
-    weights <- graph@x[start:end]
-
-    # rank neighbors by edge weight
-    top_k <- min(topn, length(weights))
-    top_idx <- order(weights, decreasing = TRUE)[seq_len(top_k)]
-
-    top_cluster <- cellcluster[neighbors[top_idx]]
-    supportnum[i] <- sum(top_cluster == top_cluster[1])
+  # Convert cluster labels to integer codes for C++
+  if (is.factor(cellcluster)) {
+    cluster_int <- as.integer(cellcluster)
+  } else {
+    cluster_int <- as.integer(as.factor(cellcluster))
   }
 
-  MEI <- (topn - supportnum) / topn
+  MEI <- cal_mei_rcpp(graph@p, graph@i, graph@x, cluster_int, topn)
   return(MEI)
 }
