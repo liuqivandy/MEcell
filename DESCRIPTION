@@ -1,14 +1,14 @@
 Package: MEcell
 Type: Package
 Title: Microenvironment-aware spatial modeling of cell identities
-Version: 0.1.0
-Author: Qi Liu
+Version: 0.1.1
+Author: Qi Liu, Quanhu Sheng
 Maintainer: The package maintainer <qi.liu@vanderbilt.edu>
 Description: MEcell leverages the local microenvironment to enhance spatial cell clustering
 License: MIT
 Encoding: UTF-8
 LazyData: true
-Imports: Rcpp,RANN
+Imports: Rcpp,RANN,nabor
 Depends: Seurat, Matrix (>= 1.2)
 LinkingTo: Rcpp
 Roxygen: list(markdown = TRUE)
