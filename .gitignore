@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+src/findknn.o
+src/MEcell.so
+src/RcppExports.o
