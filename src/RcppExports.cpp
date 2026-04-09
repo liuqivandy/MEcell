@@ -6,29 +6,62 @@
 using namespace Rcpp;
 
 #ifdef RCPP_USE_GLOBAL_ROSTREAM
-Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
-Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+Rcpp::Rostream<true> &Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false> &Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// find_knn_rcpp
-List find_knn_rcpp(NumericMatrix mat, IntegerMatrix candidates_mat);
-RcppExport SEXP _MEcell_find_knn_rcpp(SEXP matSEXP, SEXP candidates_matSEXP) {
-BEGIN_RCPP
+// knn_rcpp
+List knn_rcpp(NumericMatrix data, int k, int nthreads);
+RcppExport SEXP _MEcell_knn_rcpp(SEXP dataSEXP, SEXP kSEXP, SEXP nthreadsSEXP)
+{
+    BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericMatrix >::type mat(matSEXP);
-    Rcpp::traits::input_parameter< IntegerMatrix >::type candidates_mat(candidates_matSEXP);
+    Rcpp::traits::input_parameter<NumericMatrix>::type data(dataSEXP);
+    Rcpp::traits::input_parameter<int>::type k(kSEXP);
+    Rcpp::traits::input_parameter<int>::type nthreads(nthreadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(knn_rcpp(data, k, nthreads));
+    return rcpp_result_gen;
+    END_RCPP
+}
+// find_knn_rcpp
+List find_knn_rcpp(NumericMatrix mat, IntegerMatrix candidates_mat);
+RcppExport SEXP _MEcell_find_knn_rcpp(SEXP matSEXP, SEXP candidates_matSEXP)
+{
+    BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter<NumericMatrix>::type mat(matSEXP);
+    Rcpp::traits::input_parameter<IntegerMatrix>::type candidates_mat(candidates_matSEXP);
     rcpp_result_gen = Rcpp::wrap(find_knn_rcpp(mat, candidates_mat));
     return rcpp_result_gen;
-END_RCPP
+    END_RCPP
+}
+// cal_mei_rcpp
+NumericVector cal_mei_rcpp(IntegerVector p, IntegerVector i_vec, NumericVector x, IntegerVector cellcluster, int topn);
+RcppExport SEXP _MEcell_cal_mei_rcpp(SEXP pSEXP, SEXP i_vecSEXP, SEXP xSEXP, SEXP cellclusterSEXP, SEXP topnSEXP)
+{
+    BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter<IntegerVector>::type p(pSEXP);
+    Rcpp::traits::input_parameter<IntegerVector>::type i_vec(i_vecSEXP);
+    Rcpp::traits::input_parameter<NumericVector>::type x(xSEXP);
+    Rcpp::traits::input_parameter<IntegerVector>::type cellcluster(cellclusterSEXP);
+    Rcpp::traits::input_parameter<int>::type topn(topnSEXP);
+    rcpp_result_gen = Rcpp::wrap(cal_mei_rcpp(p, i_vec, x, cellcluster, topn));
+    return rcpp_result_gen;
+    END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_MEcell_find_knn_rcpp", (DL_FUNC) &_MEcell_find_knn_rcpp, 2},
-    {NULL, NULL, 0}
-};
+    {"_MEcell_knn_rcpp", (DL_FUNC)&_MEcell_knn_rcpp, 3},
+    {"_MEcell_find_knn_rcpp", (DL_FUNC)&_MEcell_find_knn_rcpp, 2},
+    {"_MEcell_cal_mei_rcpp", (DL_FUNC)&_MEcell_cal_mei_rcpp, 5},
+    {NULL, NULL, 0}};
 
-RcppExport void R_init_MEcell(DllInfo *dll) {
+RcppExport void R_init_MEcell(DllInfo *dll)
+{
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }
